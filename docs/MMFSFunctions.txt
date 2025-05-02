@@ -1,0 +1,28 @@
+MMFS FUNCTIONS
+
+These are taken from src/mmfs/mmfs.h.
+
+Partition-related functions:
+    mmfsGoToPartition(FILE *drive, int16_t index)
+        Seeks the drive to the specified partition index. Returns false if partition was not found, drive has an invalid alignment or if drive is NULL.
+        Args:
+            drive: pointer to drive file
+            index: partition index
+    mmfsGetPartitionData(FILE *drive, uint64_t *serialNum, char *label)
+        Gets the data of the current partition. Returns false if the partition is invalid or if drive is NULL.
+        Output parameters can be NULL, nothing will be written to them if this is the case.
+        Args:
+            drive: pointer to drive file
+            serialNum: (output) pointer to drive serial number
+            label: (output) drive label, must fit all 48 bytes
+    mmfsFindFile(FILE *drive, char *shortFileName, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *owner, uint64_t *size)
+        Finds the file based on its short file name. Returns false if the file is not found or if drive is NULL.
+        Output parameters can be NULL, nothing will be written to them if this is the case. lastAcc is last accessed, lastMod is last modified.
+        shortFileName must fit 46 bytes, owner must fit 48 bytes.
+        Args:
+            drive: pointer to drive file
+            shortFileName: (input) short file name
+    mmfsGetFileData(FILE *drive, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *shortFileName, char *owner, uint64_t *size)
+        Gets the data of the current file. Returns false if the partition is invalid, if the file is invalid or if drive is NULL.
+        Output parameters can be NULL, nothing will be written to them if this is the case. lastAcc is last accessed, lastMod is last modified.
+        shortFileName must fit 46 bytes, owner must fit 48 bytes.

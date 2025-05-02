@@ -1,0 +1,26 @@
+HYPERVISOR FUNCTIONS
+
+These are taken from src/hypervisor/hypervisor.h.
+
+Cartridge-related functions:
+    hvInit(hypervisor_t *hvCtx)
+        Initializes the given hypervisor context.
+    hvLoadCart(hypervisor_t *hvCtx, cartridge_t *cart)
+        Validates cartridge and loads it.
+        Args:
+            hvCtx: hypervisor context
+            cart: pointer to cartridge
+    hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t *readSize)
+        Reads the file from the specified partition and stores the size in readSize.
+        Returns NULL if file not found or read failed, or a buffer.
+        Args:
+            partInx: partition index
+            fileName: long file name
+            readSize: (output) buffer size
+    hvWriteFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, void *data, uint64_t size)
+        Writes the file to the specified partition, shifting sectors to the right in case the file is too large.
+        Args:
+            partInx: partition index
+            fileName: long file name
+            data: (input) buffer
+            size: buffer size
