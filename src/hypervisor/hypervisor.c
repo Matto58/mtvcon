@@ -2,40 +2,47 @@
 #include "../mmfs/mmfs.h"
 #include <stdlib.h>
 
-// todo: implement cartridge_t and hypervisor_t as mentioned in HypervisorFunctions.txt
-FILE *globalHvDrive;
-
-bool canWriteToNextSect() {
-    int c = fgetc(globalHvDrive);
-    fseek(globalHvDrive, SEEK_CUR, -1);
+bool canWriteToNextSect(hypervisor_t *hv) {
+    int c = fgetc(hv->drive);
+    fseek(hv->drive, SEEK_CUR, -1);
     return c == 0;
 }
 
-bool hvInit() {
-    globalHvDrive = fopen("../vdisk.bin", "r+");
-    if (globalHvDrive == NULL) return false;
-    return true;
+hypervisor_t *hvInit(char *driveLocation) {
+    hypervisor_t *hvCtx = malloc(sizeof(hypervisor_t));
+    hvCtx->drive = fopen(driveLocation, "r+");
+    if (hvCtx->drive == NULL) {
+        free(hvCtx);
+        return NULL;
+    }
+    return hvCtx;
 }
 
-void *hvReadFile(int16_t partInx, char *fileName, uint64_t *readSize) {
-    if (globalHvDrive == NULL)
+void hvDestroy(hypervisor_t *hvCtx) {
+    fclose(hvCtx->drive);
+    free(hvCtx);
+}
+
+void *hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t *readSize, uint64_t *bufSize) {
+    if (hvCtx->drive == NULL)
         return NULL;
 
-    if (!mmfsGoToPartition(globalHvDrive, partInx))
+    if (!mmfsGoToPartition(hvCtx->drive, partInx))
         return NULL;
 
-    if (!mmfsFindFile(globalHvDrive, mmfsShortenFileName(fileName), NULL, NULL, NULL, NULL, NULL, readSize))
+    if (!mmfsFindFile(hvCtx->drive, mmfsShortenFileName(fileName), NULL, NULL, NULL, NULL, NULL, readSize))
         return NULL;
 
-    void *buffer = malloc(((*readSize) / 127) * 127 + 1);
+    *bufSize = (*readSize / 127 + 1) * 127;
+    void *buffer = malloc(*bufSize);
     // 127 is how many bytes of a file can be stored in a sector
     // 128 bytes per sector (first byte is 05 - file data marker)
     for (uint64_t i = 0; i < *readSize; i += 127) {
-        if (!mmfsReadNextFileSector(globalHvDrive, &buffer[i])) return NULL;
+        if (!mmfsReadNextFileSector(hvCtx->drive, buffer + i)) return NULL;
     }
     return buffer;
 }
 
-void hvWriteFile(int16_t partInx, char *fileName, void *data, uint64_t size) {
+void hvWriteFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, void *data, uint64_t size) {
     // todo implement
 }

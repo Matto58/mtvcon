@@ -5,12 +5,13 @@
 
 int main(int argc, char **argv) {
     // testing code, todo: add a proper ui?
-    if (!hvInit()) {
+    hypervisor_t *hv = hvInit("../vdisk.bin");
+    if (hv == NULL) {
         printf("Failed to initialise hypervisor!\n");
         return 1;
     }
-    size_t fileSize;
-    void *buffer = hvReadFile(0, "my file.txt", &fileSize);
+    size_t fileSize, bufferSize; 
+    void *buffer = hvReadFile(hv, 0, "my file.txt", &fileSize, &bufferSize);
     if (buffer == NULL) {
         printf("Could not read file 'my file.txt'!\n");
         return 1;
@@ -19,5 +20,6 @@ int main(int argc, char **argv) {
     strncpy(str, buffer, fileSize);
     printf("Read %ld bytes. Content:\n%s\n", fileSize, str);
     free(buffer);
+    hvDestroy(hv);
     return 0;
 }

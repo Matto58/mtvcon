@@ -1,7 +1,15 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
+
 #pragma once
 
-void *hvReadFile(int16_t partInx, char *fileName, uint64_t *readSize);
-void hvWriteFile(int16_t partInx, char *fileName, void *data, uint64_t size);
-bool hvInit();
+// todo: add more shit, this is p barebones for now
+typedef struct {
+    FILE *drive;
+} hypervisor_t;
+
+void *hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t *readSize, uint64_t *bufSize);
+void hvWriteFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, void *data, uint64_t size);
+hypervisor_t *hvInit(char *driveLocation);
+void hvDestroy(hypervisor_t *hvCtx);

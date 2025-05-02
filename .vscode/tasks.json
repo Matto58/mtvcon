@@ -1,0 +1,30 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "build mtvcon",
+            "command": "/usr/bin/gcc",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${fileDirname}/main.c",
+                "${fileDirname}/hypervisor/hypervisor.c",
+                "${fileDirname}/mmfs/mmfs.c",
+                "-o",
+                "${fileDirname}/../mtvcon"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Úloha vygenerovaná ladicím programem"
+        }
+    ],
+    "version": "2.0.0"
+}
