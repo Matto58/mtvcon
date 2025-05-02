@@ -9,11 +9,6 @@ Base functions:
             driveLocation: (input) path to valid MMFS binary or device
     hvDestroy(hypervisor_t *hvCtx)
         Destroys the specified hypervisor context.
-    hvLoadCart(hypervisor_t *hvCtx, cartridge_t *cart)
-        Validates cartridge and loads it.
-        Args:
-            hvCtx: hypervisor context
-            cart: pointer to cartridge
 File I/O functions:
     hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t *readSize, uint64_t *bufSize)
         Reads the file from the specified partition and stores the size in readSize.
