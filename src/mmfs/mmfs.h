@@ -4,6 +4,7 @@
 
 #pragma once
 
+bool mmfsValidatePartSector(char *sector);
 bool mmfsGoToPartition(FILE *drive, int16_t index);
 bool mmfsGetPartitionData(FILE *drive, uint64_t *serialNum, char *label);
 bool mmfsFindFile(FILE *drive, char *shortFileName, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *owner, uint64_t *size);

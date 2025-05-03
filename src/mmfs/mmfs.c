@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 
-bool validatePartSector(char *sector) {
+bool mmfsValidatePartSector(char *sector) {
     for (unsigned char i = 0; i < 128; i += 4) {
         // A1 B0 B9 12 is the magic number for MMFS partitions
         // a sector filled with it is the first sector of the partition
@@ -23,7 +23,7 @@ bool mmfsGoToPartition(FILE *drive, int16_t index) {
     while (feof(drive) == 0) {
         size_t read = fread(buffer, 1, 128, drive);
         if (read < 128) return false;
-        if (validatePartSector(buffer)) {
+        if (mmfsValidatePartSector(buffer)) {
             currentIndex++;
             if (index == currentIndex) return true;
             continue;

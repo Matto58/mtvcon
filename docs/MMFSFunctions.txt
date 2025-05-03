@@ -26,3 +26,7 @@ Partition-related functions:
         Gets the data of the current file. Returns false if the partition is invalid, if the file is invalid or if drive is NULL.
         Output parameters can be NULL, nothing will be written to them if this is the case. lastAcc is last accessed, lastMod is last modified.
         shortFileName must fit 46 bytes, owner must fit 48 bytes.
+    mmfsValidatePartSector(char *sector)
+        Checks if the given sector is a valid partition separator. Returns true if it is, otherwise false.
+        Args:
+            sector: (input) 128 byte sector
