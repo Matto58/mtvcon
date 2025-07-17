@@ -30,3 +30,13 @@ Partition-related functions:
         Checks if the given sector is a valid partition separator. Returns true if it is, otherwise false.
         Args:
             sector: (input) 128 byte sector
+    mmfsShiftSectors(FILE *drive, long basePos, int shift, int sectorCount, const char *blankSector)
+        Shifts a range of sectors left or right starting from the given base position. Returns false if drive is NULL.
+        Does not check for partition boundaries or modify any metadata, only shifts raw sector data.
+        Please ensure there is space to do this and update metadata appropriately.
+        Args:
+            drive: pointer to drive file
+            basePos: byte offset where the sector range begins
+            shift: number of sectors to shift; negative for left, positive for right
+            sectorCount: number of sectors to shift
+            blankSector: (input) 128 byte sector to write into freed space when shifting right

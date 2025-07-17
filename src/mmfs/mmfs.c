@@ -85,6 +85,7 @@ char *mmfsShortenFileName(char *str) {
 }
 
 bool mmfsGetFileData(FILE *drive, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *shortFileName, char *owner, uint64_t *size) {
+    if (drive == NULL) return false;
     char sector[128];
     fread(sector, 1, 128, drive);
     if (sector[0] != (char)3) return false;
@@ -100,6 +101,7 @@ bool mmfsGetFileData(FILE *drive, uint8_t *permissions, uint64_t *lastMod, uint6
 }
 
 bool mmfsFindFile(FILE *drive, char *shortFileName, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *owner, uint64_t *size) {
+    if (drive == NULL) return false;
     char foundName[46];
     while (!feof(drive)) {
         bool foundData = mmfsGetFileData(drive, permissions, lastMod, created, lastAcc, foundName, owner, size);
@@ -110,9 +112,48 @@ bool mmfsFindFile(FILE *drive, char *shortFileName, uint8_t *permissions, uint64
 }
 
 bool mmfsReadNextFileSector(FILE *drive, void *destination) {
+    if (drive == NULL) return false;
     char sector[128];
     fread(sector, 1, 128, drive);
     if (sector[0] != (char)5) return false;
     memcpy(destination, &sector[1], 127);
     return true;
+}
+
+bool mmfsShiftSectors(FILE *drive, long basePos, int shift, int sectorCount, char *blankSect) {
+    if (drive == NULL) return false;
+    if (shift > 0) {
+        // --> right shift
+        // first we shift
+        for (int i = sectorCount-1; i >= 0; i--) {
+            char sect[128];
+            fseek(drive, basePos + i*128, SEEK_SET);
+            fread(sect, 1, 128, drive);
+            fseek(drive, basePos + (i + shift)*128, SEEK_SET);
+            fwrite(sect, 1, 128, drive);
+        }
+
+        // then fill the gap with the specified sector
+        fseek(drive, basePos, SEEK_SET);
+        for (int i = 0; i < shift; i++)
+            fwrite(blankSect, 1, 128, drive);
+    }
+    else {
+        // <-- left to shift
+        shift = -shift; // absolute value, since it's guaranteed to be less than 0, we don't need to call abs()
+        // first we shift
+        for (int i = 0; i < sectorCount; i++) {
+            char sect[128];
+            fseek(drive, basePos + (i + shift)*128, SEEK_SET);
+            fread(sect, 1, 128, drive);
+            fseek(drive, basePos + i*128, SEEK_SET);
+            fwrite(sect, 1, 128, drive);
+        }
+
+        // then fill the end with empty sectors
+        char emptySect[128] = {0};
+        fseek(drive, basePos + sectorCount*128, SEEK_SET);
+        for (int i = 0; i < shift; i++)
+            fwrite(emptySect, 1, 128, drive);
+    }
 }

@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "build and run mtvcon",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/mtvcon",
+            "args": ["${workspaceFolder}/vdisk.bin"],
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "MIMode": "gdb",
+            "setupCommands": [{
+                "text": "-enable-pretty-printing",
+                "description": "Enable GDB pretty printing",
+                "ignoreFailures": true 
+            }],
+            "preLaunchTask": "build mtvcon"
+        }
+    ]
+}

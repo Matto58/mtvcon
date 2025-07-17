@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "g_info_def": "plaintext",
+        "g_info": "plaintext",
+        "*.mts": "plaintext",
+        "pydisp": "code-text-binary",
+        "README": "plaintext",
+        "hypervisor.h": "c"
+    }
+}

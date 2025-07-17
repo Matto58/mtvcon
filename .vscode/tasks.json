@@ -7,23 +7,42 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "${fileDirname}/main.c",
-                "${fileDirname}/hypervisor/hypervisor.c",
-                "${fileDirname}/mmfs/mmfs.c",
+                "${workspaceFolder}/src/main.c",
+                "${workspaceFolder}/src/hypervisor/hypervisor.c",
+                "${workspaceFolder}/src/mmfs/mmfs.c",
                 "-o",
-                "${fileDirname}/../mtvcon"
+                "${workspaceFolder}/mtvcon"
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"
             ],
             "group": {
                 "kind": "build",
-                "isDefault": true
             },
-            "detail": "Úloha vygenerovaná ladicím programem"
+        }, {
+            "type": "cppbuild",
+            "label": "build mtvcon with the alternate hypervisor",
+            "command": "/usr/bin/gcc",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${workspaceFolder}/src/main.c",
+                "${workspaceFolder}/src/hypervisor_alt/hypervisor.c",
+                "-o",
+                "${workspaceFolder}/mtvcon"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+            }
         }
     ],
     "version": "2.0.0"

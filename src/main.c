@@ -2,12 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+// returns 0 on success, 1 on mild unsuccess, 2 on not mild unsuccess and with 3 you're just cooked
 int main(int argc, char **argv) {
+    if (argc < 2) {
+        printf("Please specify a .bin with the MMFS-formatted system partition!\n");
+        return 3;
+    }
     // testing code, todo: add a proper ui?
-    hypervisor_t *hv = hvInit("../vdisk.bin");
+    hypervisor_t *hv = hvInit(argv[1]);
     if (hv == NULL) {
         printf("Failed to initialise hypervisor!\n");
-        return 1;
+        return 2;
     }
     size_t fileSize, bufferSize; 
     void *buffer = hvReadFile(hv, 0, "my file.txt", &fileSize, &bufferSize);
@@ -21,7 +26,7 @@ int main(int argc, char **argv) {
     printf("Read %ld bytes. Content:\n%s\n", fileSize, str);
     free(buffer);
 
-    char *newText = "mroew :3";
+    char *newText = "my testing file yippee!!";
     if (!hvWriteFile(hv, 0, "my file.txt", newText, strlen(newText))) {
         printf("Could not write '%s' to my file.txt!\n", newText);
         hvDestroy(hv);

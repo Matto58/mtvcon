@@ -35,7 +35,7 @@ void hvDestroy(hypervisor_t *hvCtx) {
 }
 
 void *hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t *readSize, uint64_t *bufSize) {
-    if (!validHv(hvCtx)) return NULL;
+    if (!validHv(hvCtx) || fileName == NULL || readSize == NULL || bufSize == NULL) return NULL;
 
     if (!mmfsGoToPartition(hvCtx->drive, partInx))
         return NULL;
@@ -53,8 +53,9 @@ void *hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t 
     return buffer;
 }
 
+// TODO: THIS SHIT IS BROKEN. FIX AFTER REWRITING THE SPEC.
 bool hvWriteFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, void *data, uint64_t size) {
-    if (!validHv(hvCtx)) return NULL;
+    if (!validHv(hvCtx) || fileName == NULL || data == NULL) return NULL;
     if (!mmfsGoToPartition(hvCtx->drive, partInx)) return NULL;
     uint64_t currentSize;
     if (!mmfsFindFile(hvCtx->drive, mmfsShortenFileName(fileName), NULL, NULL, NULL, NULL, NULL, &currentSize))
@@ -63,6 +64,7 @@ bool hvWriteFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, void *dat
     char blankFlSector[128] = {0};
     blankFlSector[0] = 0x05;
     uint64_t roundedSize = roundToFlSector(size), roundedCurrentSize = roundToFlSector(currentSize);
+    long basePos = ftell(hvCtx->drive);
     if (roundedSize == roundedCurrentSize) {
         // fits within the existing sector(s)!! we can write without shifting the rest of the sectors
         while (true) {
@@ -81,42 +83,28 @@ bool hvWriteFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, void *dat
             remainingBytes -= 127;
         }
     }
-    // TODO: FIX THIS ELSE STATEMENT NOT WORKING & LEAKING MEMORY. VALGRIND GAVE 589221 ERRORS TO THIS. WHAT THE FUCK!?!?!?!
     else {
         // whoops, we have to shift the sectors to the left or to the right
-        int sectShift = (roundedSize - roundedCurrentSize)/127;
-        if (roundedSize < roundedCurrentSize) {
-            // <-- left shift
-            // here we write n-sectShift sectors of blank file data and a blank sector
-            // yes, this is stupid, but hopefully mmfs2 will allow for a fix
-            while (remainingBytes < 127*sectShift) {
-                fwrite(blankFlSector, 1, 128, hvCtx->drive);
-                remainingBytes -= 127;
-            }
-            char blankSect[] = {0};
-            for (int i = 0; i < sectShift; i++)
-                fwrite(blankSect, 1, 128, hvCtx->drive);
-            return hvWriteFile(hvCtx, partInx, fileName, data, size);
-        }
-        else {
-            // --> right shift
-            // no comment. i looked away from this code for 2 mins and no longer have an idea how this works. help
-            fseek(hvCtx->drive, roundedCurrentSize, SEEK_CUR);
-            int iters = roundedCurrentSize/127;
+        int dataSects = roundedSize/127, newDataSects = roundedCurrentSize/127;
+        int sectShift = newDataSects - dataSects;
+        // DEBUG SHIT
+        printf("original file sect count: %d, new file sect count: %d -- DIFFERENCE: %d\n", dataSects, newDataSects, sectShift);
+        printf("basePos = %ld\n", basePos);
+        // ofc validate if we can even write
+        for (int i = 0; i < newDataSects + sectShift; i++) {
             char sect[128];
-            for (int i = 0; i < iters; i++) {
-                fseek(hvCtx->drive, -128, SEEK_CUR);
-                fread(sect, 1, 128, hvCtx->drive);
-                if (mmfsValidatePartSector(sect))
-                    return false;
-                fwrite(sect, 1, 128, hvCtx->drive);
-                fseek(hvCtx->drive, -256, SEEK_CUR);
-            }
-            return hvWriteFile(hvCtx, partInx, fileName, data, size);
+            fseek(hvCtx->drive, basePos + i * 128, SEEK_SET);
+            printf("WRITE VALIDATION: seeked to sect start, pos: %ld\n", ftell(hvCtx->drive));
+            fread(sect, 1, 128, hvCtx->drive);
+            printf("WRITE VALIDATION: after fread, pos: %ld\n", ftell(hvCtx->drive));
+            if (mmfsValidatePartSector(sect))
+                return false;
+            printf("WRITE VALIDATION: sector validated!\n");
         }
+        mmfsShiftSectors(hvCtx->drive, ftell(hvCtx->drive), sectShift, newDataSects, blankFlSector);
+        printf("SHIFT: (postshift) final pos: %ld\n", ftell(hvCtx->drive));
     }
-    // negative cuz we're going back + the position of the size property to shift to it
-    fseek(hvCtx->drive, -roundToClassicSector(size) + 0x78, SEEK_CUR);
+    fseek(hvCtx->drive, basePos - 8, SEEK_SET);
     printf("seek to size prop, now at %ld\n", ftell(hvCtx->drive));
     fwrite(&size, 8, 1, hvCtx->drive);
     printf("write to size prop, now at %ld\n", ftell(hvCtx->drive));
