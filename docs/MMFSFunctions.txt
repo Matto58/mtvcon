@@ -15,6 +15,12 @@ Partition-related functions:
             drive: pointer to drive file
             serialNum: (output) pointer to drive serial number
             label: (output) drive label, must fit all 48 bytes
+    mmfsValidatePartSector(char *sector)
+        Checks if the given sector is a valid partition separator. Returns true if it is, otherwise false.
+        Args:
+            sector: (input) 128 byte sector
+
+File-related functions:
     mmfsFindFile(FILE *drive, char *shortFileName, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *owner, uint64_t *size)
         Finds the file based on its short file name. Returns false if the file is not found or if drive is NULL.
         Output parameters can be NULL, nothing will be written to them if this is the case. lastAcc is last accessed, lastMod is last modified.
@@ -22,21 +28,21 @@ Partition-related functions:
         Args:
             drive: pointer to drive file
             shortFileName: (input) short file name
-    mmfsGetFileData(FILE *drive, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *shortFileName, char *owner, uint64_t *size)
-        Gets the data of the current file. Returns false if the partition is invalid, if the file is invalid or if drive is NULL.
+    mmfsGetFileMetadata(FILE *drive, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *shortFileName, char *owner, uint64_t *size)
+        Gets the metadata of the current file. Returns false if the partition is invalid, if the file is invalid or if drive is NULL.
         Output parameters can be NULL, nothing will be written to them if this is the case. lastAcc is last accessed, lastMod is last modified.
         shortFileName must fit 46 bytes, owner must fit 48 bytes.
-    mmfsValidatePartSector(char *sector)
-        Checks if the given sector is a valid partition separator. Returns true if it is, otherwise false.
-        Args:
-            sector: (input) 128 byte sector
-    mmfsShiftSectors(FILE *drive, long basePos, int shift, int sectorCount, const char *blankSector)
-        Shifts a range of sectors left or right starting from the given base position. Returns false if drive is NULL.
-        Does not check for partition boundaries or modify any metadata, only shifts raw sector data.
-        Please ensure there is space to do this and update metadata appropriately.
+    mmfsGetFileDataPtrs(FILE *drive, uint64_t continueAddr, int *iter)
+        Gets the data pointers of the current file.
+        Returns NULL if something went wrong, otherwise an array of pointers. NOTE: Free this array with stdlib's free().
         Args:
             drive: pointer to drive file
-            basePos: byte offset where the sector range begins
-            shift: number of sectors to shift; negative for left, positive for right
-            sectorCount: number of sectors to shift
-            blankSector: (input) 128 byte sector to write into freed space when shifting right
+            continueAddr: internal variable, set this to 0
+            iter: internal pointer, set this to NULL
+    mmfsSetFileDataPtrs(FILE *drive, uint64_t *ptrs, int ptrCount)
+        Sets the data pointers of the current file.
+        Returns true if all pointers were written correctly, otherwise false.
+        Args:
+            drive: pointer to drive file
+            ptrs: (input) array of pointers
+            ptrCount: number of pointers in the array

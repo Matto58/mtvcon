@@ -5,6 +5,10 @@
         "*.mts": "plaintext",
         "pydisp": "code-text-binary",
         "README": "plaintext",
-        "hypervisor.h": "c"
+        "hypervisor.h": "c",
+        "compare": "c",
+        "cstdint": "c",
+        "format": "c",
+        "stdbool.h": "c"
     }
 }

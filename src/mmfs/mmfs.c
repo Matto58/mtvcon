@@ -1,6 +1,7 @@
 #include "mmfs.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 bool mmfsValidatePartSector(char *sector) {
     for (unsigned char i = 0; i < 128; i += 4) {
@@ -41,7 +42,7 @@ bool mmfsGetPartitionData(FILE *drive, uint64_t *serialNum, char *label) {
     // disgusting but can't be cleaned up i think
     if (buffer[0] != (char)0x02 // prototype marker
         || buffer[1] != (char)0x01 || buffer[2] != (char)0x00 // version
-        || buffer[3] != (char)0x19 || buffer[4] != (char)0x04 || buffer[5] != (char)0x01 // prototype version
+        || buffer[3] != (char)0x19 || buffer[4] != (char)0x07 || buffer[5] != (char)0x01 // prototype version
     ) return false;
     // validates key A and key B
     for (int i = 0; i < 24; i++)
@@ -84,7 +85,7 @@ char *mmfsShortenFileName(char *str) {
     return name;
 }
 
-bool mmfsGetFileData(FILE *drive, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *shortFileName, char *owner, uint64_t *size) {
+bool mmfsGetFileMetadata(FILE *drive, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *shortFileName, char *owner, uint64_t *size) {
     if (drive == NULL) return false;
     char sector[128];
     fread(sector, 1, 128, drive);
@@ -120,40 +121,70 @@ bool mmfsReadNextFileSector(FILE *drive, void *destination) {
     return true;
 }
 
-bool mmfsShiftSectors(FILE *drive, long basePos, int shift, int sectorCount, char *blankSect) {
+// NOTE FOR USER: CALL free ON OUTPUTTED BUFFER WHEN YOU'RE DONE!!!!!
+uint64_t *mmfsGetFileDataPtrs(FILE *drive, uint64_t continueAddr, int *iter) {
+    if (drive == NULL) return NULL;
+    char sector[128];
+    fread(sector, 1, 128, drive);
+    if (sector[0] != (char)6) return NULL; // todo: add error messages
+    int iterN = 1;
+    if (iter == NULL) iter = &iterN;
+    uint64_t *ptrs = (uint64_t *)malloc(120); // 15 pointers * 8 bytes per pointer = 120
+    for (int i = 0; i < 15; i++) {
+        uint64_t ptr;
+        memcpy(&ptr, sector + (i+1)*8, 8);
+        ptrs[i] = ptr;
+    }
+    uint64_t continueAddrNest = 0;
+    memcpy(&continueAddrNest, &sector[1], 7);
+    if (continueAddrNest == 0) return ptrs;
+
+    uint64_t *ptrsNew = mmfsGetFileDataPtrs(drive, continueAddrNest, &iterN);
+    if (ptrsNew == NULL) return ptrs;
+    uint64_t *ptrsFinal = (uint64_t *)malloc(8 * 15 * (iterN+1));
+    memcpy(ptrsFinal, ptrs, 8*15);
+    memcpy(ptrsFinal + 8*15, ptrsNew, 8 * 15 * iterN);
+    free(ptrs);
+    free(ptrsNew);
+    return ptrsFinal;
+}
+
+bool mmfsSetFileDataPtrs(FILE *drive, uint64_t *ptrs, int ptrCount) {
     if (drive == NULL) return false;
-    if (shift > 0) {
-        // --> right shift
-        // first we shift
-        for (int i = sectorCount-1; i >= 0; i--) {
-            char sect[128];
-            fseek(drive, basePos + i*128, SEEK_SET);
-            fread(sect, 1, 128, drive);
-            fseek(drive, basePos + (i + shift)*128, SEEK_SET);
-            fwrite(sect, 1, 128, drive);
-        }
+    char sector[128];
+    fread(sector, 1, 128, drive);
+    if (sector[0] != (char)6) return false;
+    
+    int i;
+    fseek(drive, 8, SEEK_CUR);
+    for (i = 0; i < 15 && i < ptrCount; i++)
+        fwrite(&ptrs[i], 8, 1, drive);
+    // snap to partition
+    fseek(drive, 8 * (14-i), SEEK_CUR);
 
-        // then fill the gap with the specified sector
-        fseek(drive, basePos, SEEK_SET);
-        for (int i = 0; i < shift; i++)
-            fwrite(blankSect, 1, 128, drive);
+    uint64_t continueAddr = 0;
+    memcpy(&continueAddr, &sector[1], 7);
+    if (continueAddr != 0) {
+        fseek(drive, continueAddr * 128, SEEK_SET);
+        return mmfsSetFileDataPtrs(drive, &ptrs[15], ptrCount-15);
     }
-    else {
-        // <-- left to shift
-        shift = -shift; // absolute value, since it's guaranteed to be less than 0, we don't need to call abs()
-        // first we shift
-        for (int i = 0; i < sectorCount; i++) {
-            char sect[128];
-            fseek(drive, basePos + (i + shift)*128, SEEK_SET);
-            fread(sect, 1, 128, drive);
-            fseek(drive, basePos + i*128, SEEK_SET);
-            fwrite(sect, 1, 128, drive);
-        }
+    if (i == 14 && ptrCount > 15 && continueAddr == 0) {
+        // find blank sector we can write to
+        long base = ftell(drive);
+        do {
+            fread(sector, 1, 128, drive);
+            if (feof(drive)) return false;
+        } while (sector[0] != 0);
 
-        // then fill the end with empty sectors
-        char emptySect[128] = {0};
-        fseek(drive, basePos + sectorCount*128, SEEK_SET);
-        for (int i = 0; i < shift; i++)
-            fwrite(emptySect, 1, 128, drive);
+        char blankPtrSect[128] = {0}; blankPtrSect[0] = 6;
+        fseek(drive, -128, SEEK_CUR);
+        continueAddr = ftell(drive)/128;
+        memcpy(&blankPtrSect[1], (&continueAddr) + 1, 7);
+        fwrite(blankPtrSect, 1, 128, drive);
+
+        bool result = mmfsSetFileDataPtrs(drive, &ptrs[15], ptrCount-15);
+        fseek(drive, base, SEEK_SET);
+        return result;
     }
+    return true;
 }
