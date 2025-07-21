@@ -54,7 +54,7 @@ void *hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t 
     // 127 is how many bytes of a file can be stored in a sector
     // 128 bytes per sector (first byte is 05 - file data marker)
     for (uint64_t i = 0; dataPtrs[i] != 0; i++) {
-        fseek(hvCtx->drive, base + dataPtrs[i]*128, SEEK_SET);
+        fseek(hvCtx->drive, dataPtrs[i]*128, SEEK_SET);
         if (!mmfsReadNextFileSector(hvCtx->drive, buffer + i*127)) {
             free(buffer);
             free(dataPtrs);

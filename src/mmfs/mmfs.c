@@ -105,8 +105,8 @@ bool mmfsFindFile(FILE *drive, char *shortFileName, uint8_t *permissions, uint64
     if (drive == NULL) return false;
     char foundName[46];
     while (!feof(drive)) {
-        bool foundData = mmfsGetFileData(drive, permissions, lastMod, created, lastAcc, foundName, owner, size);
-        if (strncmp(shortFileName, foundName, min(strlen(shortFileName), strlen(foundName))) == 0 && foundData)
+        bool foundData = mmfsGetFileMetadata(drive, permissions, lastMod, created, lastAcc, foundName, owner, size);
+        if (foundData && strncmp(shortFileName, foundName, min(strlen(shortFileName), strlen(foundName))) == 0)
             return true;
     }
     return false;
@@ -179,7 +179,7 @@ bool mmfsSetFileDataPtrs(FILE *drive, uint64_t *ptrs, int ptrCount) {
         char blankPtrSect[128] = {0}; blankPtrSect[0] = 6;
         fseek(drive, -128, SEEK_CUR);
         continueAddr = ftell(drive)/128;
-        memcpy(&blankPtrSect[1], (&continueAddr) + 1, 7);
+        memcpy(&blankPtrSect[1], (void *)(&continueAddr) + 1, 7);
         fwrite(blankPtrSect, 1, 128, drive);
 
         bool result = mmfsSetFileDataPtrs(drive, &ptrs[15], ptrCount-15);

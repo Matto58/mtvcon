@@ -10,6 +10,7 @@
                 "${workspaceFolder}/src/main.c",
                 "${workspaceFolder}/src/hypervisor/hypervisor.c",
                 "${workspaceFolder}/src/mmfs/mmfs.c",
+                "${workspaceFolder}/src/mmfs/mmfsutils.c",
                 "-o",
                 "${workspaceFolder}/mtvcon"
             ],

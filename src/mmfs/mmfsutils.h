@@ -1,4 +1,3 @@
 #include "mmfs.h"
 
-FILE *muCreateDrive(char *filename, uint64_t size);
-bool muWriteFile(FILE *drive);
+bool muCreateDriveAndPartition(char *filename, char *label, uint64_t sectorCount);

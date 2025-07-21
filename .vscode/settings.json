@@ -9,6 +9,7 @@
         "compare": "c",
         "cstdint": "c",
         "format": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "mmfsutils.h": "c"
     }
 }
