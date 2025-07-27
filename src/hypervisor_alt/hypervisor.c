@@ -47,7 +47,7 @@ hypervisor_t *hvInit(char *driveLocation) {
     // printf("%s", (char *)d);
     struct stat s;
     if (!(stat(d, &s) == 0 && S_ISDIR(s.st_mode))) mkdir(d, 0755);
-    free(d);
+    dbgFree(d, "hvInit");
     return (hypervisor_t *)1; // hack to not fail the null check
 }
 void hvDestroy(hypervisor_t *hvCtx) { return; }
