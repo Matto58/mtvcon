@@ -8,7 +8,7 @@ bool canWriteToNextSect(hypervisor_t *hv) {
     return c == 0;
 }
 
-bool validHv(hypervisor_t *hv) {
+bool hvIsValid(hypervisor_t *hv) {
     return hv != NULL && hv->drive != NULL;
 }
 
@@ -36,7 +36,7 @@ void hvDestroy(hypervisor_t *hvCtx) {
 
 // todo: copy this to mmfsutils.c and use that function here
 void *hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t *readSize, uint64_t *bufSize) {
-    if (!validHv(hvCtx) || fileName == NULL || readSize == NULL || bufSize == NULL) return NULL;
+    if (!hvIsValid(hvCtx) || fileName == NULL || readSize == NULL || bufSize == NULL) return NULL;
 
     if (!mmfsGoToPartition(hvCtx->drive, partInx))
         return NULL;

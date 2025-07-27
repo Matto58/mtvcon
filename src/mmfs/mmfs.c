@@ -101,9 +101,11 @@ bool mmfsGetFileMetadata(FILE *drive, uint8_t *permissions, uint64_t *lastMod, u
     return true;
 }
 
+// todo: add partition index to this function
 bool mmfsFindFile(FILE *drive, char *shortFileName, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *owner, uint64_t *size) {
     if (drive == NULL) return false;
     char foundName[46];
+    fseek(drive, 0, SEEK_SET);
     while (!feof(drive)) {
         bool foundData = mmfsGetFileMetadata(drive, permissions, lastMod, created, lastAcc, foundName, owner, size);
         if (foundData && strncmp(shortFileName, foundName, min(strlen(shortFileName), strlen(foundName))) == 0)

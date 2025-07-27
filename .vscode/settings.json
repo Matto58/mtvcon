@@ -10,6 +10,8 @@
         "cstdint": "c",
         "format": "c",
         "stdbool.h": "c",
-        "mmfsutils.h": "c"
+        "mmfsutils.h": "c",
+        "mainmenu.h": "c",
+        "string.h": "c"
     }
 }

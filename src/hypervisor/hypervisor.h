@@ -13,3 +13,4 @@ void *hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t 
 bool hvWriteFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, void *data, uint64_t size);
 hypervisor_t *hvInit(char *driveLocation);
 void hvDestroy(hypervisor_t *hvCtx);
+bool hvIsValid(hypervisor_t *hvCtx);
