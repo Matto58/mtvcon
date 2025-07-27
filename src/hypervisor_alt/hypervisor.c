@@ -4,14 +4,14 @@
 // So in the meantime, the alpha versions of mtvcon will utilize this HV implementation.
 
 #include "hypervisor.h"
+#include "../mmfs/dbg.h"
 #include <sys/stat.h>
-#include <stdlib.h>
 #include <string.h>
 
 // affixes .d at the end of a file name, note: make sure to free the buffer!!!
 void *getD(char *drive) {
     size_t driveLen = strlen(drive);
-    char *driveDir = malloc(driveLen + 3); // +2 (for .d affix) +1 (for null byte)
+    char *driveDir = dbgMalloc(driveLen + 3, "getD"); // +2 (for .d affix) +1 (for null byte)
     strcpy(driveDir, drive);
     driveDir[driveLen] = '.'; driveDir[driveLen+1] = 'd'; driveDir[driveLen+2] = 0;
     return driveDir;
@@ -26,17 +26,19 @@ void *hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t 
     struct stat s; stat(n, &s);
     *readSize = s.st_size;
     *bufSize = (s.st_size / 127 + 1) * 127;
-    void *v = malloc(*bufSize);
-    fread(v, 1, *readSize, f);
+    char *funcname = "hvReadFile";
+    void *v = dbgMalloc(*bufSize, funcname);
+    dbgFread(v, 1, *readSize, f, funcname);
     fclose(f);
     return v;
 }
 bool hvWriteFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, void *data, uint64_t size) {
-    if (fileName == NULL || data == NULL) return NULL;    char n[512] = {0};
+    if (fileName == NULL || data == NULL) return NULL;
+    char n[512] = {0};
     snprintf(n, 511, "vdisk.bin.d/%s", fileName);
     FILE *f = fopen(n, "w");
     if (f == NULL) return false;
-    fwrite(data, 1, size, f);
+    dbgFwrite(data, 1, size, f, "hvWriteFile");
     fclose(f);
     return true;
 }

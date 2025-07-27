@@ -1,5 +1,6 @@
 #include "hypervisor.h"
 #include "../mmfs/mmfs.h"
+#include "../mmfs/dbg.h"
 #include <stdlib.h>
 
 bool canWriteToNextSect(hypervisor_t *hv) {
@@ -20,10 +21,11 @@ uint64_t roundToClassicSector(uint64_t n) {
 }
 
 hypervisor_t *hvInit(char *driveLocation) {
-    hypervisor_t *hvCtx = malloc(sizeof(hypervisor_t));
+    char *funcname = "hvInit";
+    hypervisor_t *hvCtx = dbgMalloc(sizeof(hypervisor_t), funcname);
     hvCtx->drive = fopen(driveLocation, "r+");
     if (hvCtx->drive == NULL) {
-        free(hvCtx);
+        dbgFree(hvCtx, funcname);
         return NULL;
     }
     return hvCtx;
@@ -31,7 +33,7 @@ hypervisor_t *hvInit(char *driveLocation) {
 
 void hvDestroy(hypervisor_t *hvCtx) {
     fclose(hvCtx->drive);
-    free(hvCtx);
+    dbgFree(hvCtx, "hvDestroy");
 }
 
 // todo: copy this to mmfsutils.c and use that function here
@@ -50,18 +52,19 @@ void *hvReadFile(hypervisor_t *hvCtx, int16_t partInx, char *fileName, uint64_t 
     if (dataPtrs == NULL) return NULL;
 
     *bufSize = roundToFlSector(*readSize);
-    void *buffer = malloc(*bufSize);
+    char *funcname = "hvReadFile";
+    void *buffer = dbgMalloc(*bufSize, funcname);
     // 127 is how many bytes of a file can be stored in a sector
     // 128 bytes per sector (first byte is 05 - file data marker)
     for (uint64_t i = 0; dataPtrs[i] != 0; i++) {
         fseek(hvCtx->drive, dataPtrs[i]*128, SEEK_SET);
         if (!mmfsReadNextFileSector(hvCtx->drive, buffer + i*127)) {
-            free(buffer);
-            free(dataPtrs);
+            dbgFree(buffer, funcname);
+            dbgFree(dataPtrs, funcname);
             return NULL;
         }
     }
-    free(dataPtrs);
+    dbgFree(dataPtrs, funcname);
     return buffer;
 }
 

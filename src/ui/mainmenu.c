@@ -1,10 +1,11 @@
 #include "mainmenu.h"
 #include "../hypervisor/hypervisor.h"
+#include "../mmfs/dbg.h"
 #include <stdlib.h>
 #include <string.h>
 
 char *dupeThatShit(char c, int repete) { // i am too lazy to think of a better name
-    char *str = malloc(repete + 1);
+    char *str = dbgMalloc(repete + 1, "dupeThatShit");
     if (str == NULL) return NULL;
     for (int i = 0; i < repete; i++) str[i] = c;
     str[repete] = '\0';
@@ -16,7 +17,7 @@ void loadCart() {
     printf("not implemented yet!\n");
 }
 
-int mainMenu() {
+int mainMenu(char *sysDriveLocation) {
     char *separator = dupeThatShit('=', 50);
     char *actions[] = {
         "load cartridge",
@@ -45,7 +46,7 @@ int mainMenu() {
         int choice = atoi(input);        
         if (choice == 1) loadCart();
         else if (choice == 2) {
-            hypervisor_t *hv = hvInit("vdisk.bin");
+            hypervisor_t *hv = hvInit(sysDriveLocation);
             if (!hvIsValid(hv)) {
                 printf("Failed to initialise hypervisor!\n");
                 continue;
@@ -56,6 +57,7 @@ int mainMenu() {
             void *buffer = hvReadFile(hv, 0, "my file.txt", &readSize, &bufSize);
             if (buffer == NULL) {
                 printf("Read failed!\n");
+                hvDestroy(hv);
                 continue;
             }
             printf("Read %ld bytes into a buffer of size %ld. Content:\n%s\n", readSize, bufSize, (char *)buffer);
@@ -67,13 +69,13 @@ int mainMenu() {
 
             printf("And now reading 'my other file.txt' to make sure it really worked...\n");
             readSize = 0; bufSize = 0;
-            free(buffer); // we are good people and we free our buffers! hip hip hooray!
+            dbgFree(buffer, "mainMenu"); // we are good people and we free our buffers! hip hip hooray!
             buffer = hvReadFile(hv, 0, "my other file.txt", &readSize, &bufSize);
             if (buffer == NULL)
                 printf("Read failed!\n");
             else {
                 printf("Read %ld bytes into a buffer of size %ld. Content:\n%s\n", readSize, bufSize, (char *)buffer);
-                free(buffer);
+                dbgFree(buffer, "mainMenu");
             }
             printf("All done!\n");
             hvDestroy(hv); // god i love the word destroy it sounds so badass for something rather lame
@@ -84,6 +86,7 @@ int mainMenu() {
         }
         // yes, we ignore incorrect choices
     }
-    free(separator);
+    dbgFree(separator, "mainMenu");
+    dbgPrintMemStats();
     return 0;
 }

@@ -1,4 +1,5 @@
 #include "mmfs.h"
+#include "dbg.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,7 +23,7 @@ bool mmfsGoToPartition(FILE *drive, int16_t index) {
     char buffer[128] = {0};
     int16_t currentIndex = -1;
     while (feof(drive) == 0) {
-        size_t read = fread(buffer, 1, 128, drive);
+        size_t read = dbgFread(buffer, 1, 128, drive, "mmfsGoToPartition");
         if (read < 128) return false;
         if (mmfsValidatePartSector(buffer)) {
             currentIndex++;
@@ -36,7 +37,7 @@ bool mmfsGoToPartition(FILE *drive, int16_t index) {
 bool mmfsGetPartitionData(FILE *drive, uint64_t *serialNum, char *label) {
     if (drive == NULL) return false;
     char buffer[128] = {0};
-    size_t read = fread(buffer, 1, 128, drive);
+    size_t read = dbgFread(buffer, 1, 128, drive, "mmfsGetPartitionData");
     if (read < 128) return false;
     // partition magic number validation
     // disgusting but can't be cleaned up i think
@@ -88,7 +89,7 @@ char *mmfsShortenFileName(char *str) {
 bool mmfsGetFileMetadata(FILE *drive, uint8_t *permissions, uint64_t *lastMod, uint64_t *created, uint64_t *lastAcc, char *shortFileName, char *owner, uint64_t *size) {
     if (drive == NULL) return false;
     char sector[128];
-    fread(sector, 1, 128, drive);
+    dbgFread(sector, 1, 128, drive, "mmfsGetFileMetadata");
     if (sector[0] != (char)3) return false;
 
     if (permissions != NULL) memcpy(permissions, &sector[1], 1);
@@ -117,7 +118,7 @@ bool mmfsFindFile(FILE *drive, char *shortFileName, uint8_t *permissions, uint64
 bool mmfsReadNextFileSector(FILE *drive, void *destination) {
     if (drive == NULL) return false;
     char sector[128];
-    fread(sector, 1, 128, drive);
+    dbgFread(sector, 1, 128, drive, "mmfsReadNextFileSector");
     if (sector[0] != (char)5) return false;
     memcpy(destination, &sector[1], 127);
     return true;
@@ -127,11 +128,12 @@ bool mmfsReadNextFileSector(FILE *drive, void *destination) {
 uint64_t *mmfsGetFileDataPtrs(FILE *drive, uint64_t continueAddr, int *iter) {
     if (drive == NULL) return NULL;
     char sector[128];
-    fread(sector, 1, 128, drive);
+    char *hiMyNameIs = "mmfsGetFileDataPtrs";
+    dbgFread(sector, 1, 128, drive, hiMyNameIs);
     if (sector[0] != (char)6) return NULL; // todo: add error messages
     int iterN = 1;
     if (iter == NULL) iter = &iterN;
-    uint64_t *ptrs = (uint64_t *)malloc(120); // 15 pointers * 8 bytes per pointer = 120
+    uint64_t *ptrs = (uint64_t *)dbgMalloc(120, hiMyNameIs); // 15 pointers * 8 bytes per pointer = 120
     for (int i = 0; i < 15; i++) {
         uint64_t ptr;
         memcpy(&ptr, sector + (i+1)*8, 8);
@@ -143,18 +145,19 @@ uint64_t *mmfsGetFileDataPtrs(FILE *drive, uint64_t continueAddr, int *iter) {
 
     uint64_t *ptrsNew = mmfsGetFileDataPtrs(drive, continueAddrNest, &iterN);
     if (ptrsNew == NULL) return ptrs;
-    uint64_t *ptrsFinal = (uint64_t *)malloc(8 * 15 * (iterN+1));
+    uint64_t *ptrsFinal = (uint64_t *)dbgMalloc(8 * 15 * (iterN+1), hiMyNameIs);
     memcpy(ptrsFinal, ptrs, 8*15);
     memcpy(ptrsFinal + 8*15, ptrsNew, 8 * 15 * iterN);
-    free(ptrs);
-    free(ptrsNew);
+    dbgFree(ptrs, hiMyNameIs);
+    dbgFree(ptrsNew, hiMyNameIs);
     return ptrsFinal;
 }
 
 bool mmfsSetFileDataPtrs(FILE *drive, uint64_t *ptrs, int ptrCount) {
     if (drive == NULL) return false;
     char sector[128];
-    fread(sector, 1, 128, drive);
+    char *hiMyNameIs = "mmfsSetFileDataPtrs"; // lame ass joke (chika chika slim shady)
+    dbgFread(sector, 1, 128, drive, hiMyNameIs);
     if (sector[0] != (char)6) return false;
     
     int i;
@@ -174,7 +177,7 @@ bool mmfsSetFileDataPtrs(FILE *drive, uint64_t *ptrs, int ptrCount) {
         // find blank sector we can write to
         long base = ftell(drive);
         do {
-            fread(sector, 1, 128, drive);
+            dbgFread(sector, 1, 128, drive, hiMyNameIs);
             if (feof(drive)) return false;
         } while (sector[0] != 0);
 
@@ -182,7 +185,7 @@ bool mmfsSetFileDataPtrs(FILE *drive, uint64_t *ptrs, int ptrCount) {
         fseek(drive, -128, SEEK_CUR);
         continueAddr = ftell(drive)/128;
         memcpy(&blankPtrSect[1], (void *)(&continueAddr) + 1, 7);
-        fwrite(blankPtrSect, 1, 128, drive);
+        dbgFwrite(blankPtrSect, 1, 128, drive, hiMyNameIs);
 
         bool result = mmfsSetFileDataPtrs(drive, &ptrs[15], ptrCount-15);
         fseek(drive, base, SEEK_SET);
