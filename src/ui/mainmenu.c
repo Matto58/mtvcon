@@ -31,9 +31,9 @@ int mainMenu() {
             " mtvcon v%s - hypervisor v%s - mmfs v%s\n"
             "%s\n",
             separator,
-            "1.0.0",
-            "0.1.0",
-            "2507-1", // todo: make this not hardcoded
+            CON_VERSION,
+            HV_VERSION,
+            MMFS_VERSION,
             separator
         );
         for (int i = 0; actions[i] != NULL; i++)

@@ -1,6 +1,6 @@
 For mtvcon 1.0:
-- [ ] Create script to generate vdisk.bin
-- [ ] Add proper UI to main.c
+- [x] Create script to generate vdisk.bin
+- [x] Add proper UI to main.c
 - [ ] Create cartridge_t
 - [ ] Create a cartridge format thing? Really just a removable MMFS drive
 - [ ] Long file name implementation

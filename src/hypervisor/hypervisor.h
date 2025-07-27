@@ -2,6 +2,10 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define CON_VERSION "1.0.0"
+#define HV_VERSION "0.1.0"
+#define MMFS_VERSION "2507-1"
+
 #pragma once
 
 // todo: add more shit, this is p barebones for now

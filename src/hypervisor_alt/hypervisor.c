@@ -46,6 +46,7 @@ hypervisor_t *hvInit(char *driveLocation) {
     struct stat s;
     if (!(stat(d, &s) == 0 && S_ISDIR(s.st_mode))) mkdir(d, 0755);
     free(d);
-    return (hypervisor_t *)1; // hack to not fail the null check in main.c
+    return (hypervisor_t *)1; // hack to not fail the null check
 }
 void hvDestroy(hypervisor_t *hvCtx) { return; }
+bool hvIsValid(hypervisor_t *hvCtx) { return true; } // always true, because this is a stub implementation
