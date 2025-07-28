@@ -10,7 +10,7 @@
 
 struct __cartridge_t {
     FILE *drive;
-    char *name;
+    char *name, *desc;
 };
 typedef struct __cartridge_t cartridge_t;
 // todo: add more shit, this is p barebones for now
@@ -26,4 +26,6 @@ hypervisor_t *hvInit(char *driveLocation);
 void hvDestroy(hypervisor_t *hvCtx);
 bool hvIsValid(hypervisor_t *hvCtx);
 
+cartridge_t *crInit(char *cartridgeId);
+void crDestroy(cartridge_t *cartridge);
 void *crGetMainProgram(hypervisor_t *parentHv, uint64_t *readSize, uint64_t *bufSize);

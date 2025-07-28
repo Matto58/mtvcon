@@ -40,3 +40,38 @@ bool muCreateDriveAndPartition(char *filename, char *label, uint64_t sectorCount
     fclose(drive);
     return true;
 }
+
+uint64_t roundToFlSector(uint64_t n) {
+    return (n / 127 + 1) * 127;
+}
+uint64_t roundToClassicSector(uint64_t n) {
+    return (n / 128 + 1) * 128;
+}
+
+void *muReadFile(FILE *drive, int16_t partInx, char *fileName, uint64_t *readSize, uint64_t *bufSize) {
+    if (!mmfsGoToPartition(drive, partInx))
+        return NULL;
+    if (!mmfsFindFile(drive, mmfsShortenFileName(fileName), NULL, NULL, NULL, NULL, NULL, readSize))
+        return NULL;
+
+    long base = ftell(drive);
+    uint64_t *dataPtrs = mmfsGetFileDataPtrs(drive, 0, NULL);
+    fseek(drive, base, SEEK_SET);
+    if (dataPtrs == NULL) return NULL;
+
+    *bufSize = roundToFlSector(*readSize);
+    char *funcname = "muReadFile";
+    void *buffer = dbgMalloc(*bufSize, funcname);
+    // 127 is how many bytes of a file can be stored in a sector
+    // 128 bytes per sector (first byte is 05 - file data marker)
+    for (uint64_t i = 0; dataPtrs[i] != 0; i++) {
+        fseek(drive, dataPtrs[i]*128, SEEK_SET);
+        if (!mmfsReadNextFileSector(drive, buffer + i*127)) {
+            dbgFree(buffer, funcname);
+            dbgFree(dataPtrs, funcname);
+            return NULL;
+        }
+    }
+    dbgFree(dataPtrs, funcname);
+    return buffer;
+}
