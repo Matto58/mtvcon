@@ -75,3 +75,24 @@ void *muReadFile(FILE *drive, int16_t partInx, char *fileName, uint64_t *readSiz
     dbgFree(dataPtrs, funcname);
     return buffer;
 }
+
+bool muWriteFile(FILE *drive, int16_t partInx, char *fileName, void *data, uint64_t size) {
+    if (!validHv(drive) || fileName == NULL || data == NULL) return false;
+    uint64_t currentSize;
+    uint64_t *dataPtrs;
+    if (!mmfsGoToPartition(drive, partInx)) return false;
+    if (!mmfsFindFile(drive, mmfsShortenFileName(fileName), NULL, NULL, NULL, NULL, NULL, &currentSize))
+        return false;
+    if (!(dataPtrs = mmfsGetFileDataPtrs(drive, 0, NULL)))
+        return false;
+    uint64_t remainingBytes = size;
+    char blankFlSector[128] = {0};
+    blankFlSector[0] = 0x05;
+    uint64_t roundedSize = roundToFlSector(size), roundedCurrentSize = roundToFlSector(currentSize);
+    return true;
+}
+
+bool muCreateFile(FILE *drive, int16_t partInx, char *fileName, void *data, uint64_t size) {
+    // todo: implement
+    return false;
+}
