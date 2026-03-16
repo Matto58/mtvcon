@@ -4,3 +4,4 @@ mtvcon.kdev4
 *.bak
 .kdev4/
 *.bin
+.vs
